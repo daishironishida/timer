@@ -27,15 +27,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-    }
-
-    .container {
-      display: flex;
-      gap: 32px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: center;
     }
 
     /* ── Timer panel ── */
@@ -46,21 +37,10 @@
       gap: 28px;
     }
 
-    .display {
-      font-size: clamp(72px, 18vw, 120px);
-      font-weight: 200;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -2px;
-      line-height: 1;
-      transition: color 0.3s;
-    }
-
-    .display.finished { color: var(--accent); }
-
     .progress-ring {
       position: relative;
-      width: 260px;
-      height: 260px;
+      width: 320px;
+      height: 320px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -82,6 +62,19 @@
     }
     .ring-fg.finished { stroke: var(--warn); }
 
+    .display {
+      font-size: 68px;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+      line-height: 1;
+      transition: color 0.3s;
+      /* sit above the SVG */
+      position: relative;
+    }
+
+    .display.finished { color: var(--accent); }
+
     .buttons {
       display: flex;
       gap: 12px;
@@ -100,9 +93,9 @@
     button:active:not(:disabled) { transform: scale(0.96); }
     button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    .btn-start  { background: var(--accent);  color: #fff; }
-    .btn-pause  { background: var(--warn);    color: #1a1a1a; }
-    .btn-stop   { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-start { background: var(--accent);  color: #fff; }
+    .btn-pause { background: var(--warn);    color: #1a1a1a; }
+    .btn-stop  { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 
     .status {
       font-size: 13px;
@@ -112,25 +105,85 @@
       text-transform: uppercase;
     }
 
-    /* ── Settings panel ── */
-    .settings-panel {
+    /* ── Gear button ── */
+    .btn-gear {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 38px;
+      height: 38px;
+      padding: 0;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 50%;
+      font-size: 17px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, border-color 0.15s;
+      z-index: 100;
+    }
+    .btn-gear:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ── Drawer backdrop ── */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 200;
+    }
+    .backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ── Drawer ── */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 260px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
       padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 20px;
-      min-width: 200px;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      z-index: 300;
+    }
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    .settings-panel h2 {
+    .drawer-header h2 {
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
     }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      padding: 0;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .btn-close:hover { color: var(--text); }
 
     .duration-inputs {
       display: flex;
@@ -167,7 +220,7 @@
       transition: border-color 0.15s;
     }
 
-    .field input:focus { border-color: var(--accent); }
+    .field input:focus  { border-color: var(--accent); }
     .field input:disabled { opacity: 0.4; }
 
     .colon {
@@ -202,35 +255,49 @@
       font-size: 11px;
       color: var(--muted);
       margin-top: -12px;
+      line-height: 1.4;
     }
-    .notify-status.granted  { color: #4caf82; }
-    .notify-status.denied   { color: var(--danger); }
+    .notify-status.granted { color: #4caf82; }
+    .notify-status.denied  { color: var(--danger); }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Timer -->
-  <div class="timer-panel">
-    <div class="progress-ring">
-      <svg viewBox="0 0 260 260" width="260" height="260">
-        <circle class="ring-bg" cx="130" cy="130" r="122"/>
-        <circle class="ring-fg" id="ring" cx="130" cy="130" r="122"
-                stroke-dasharray="766.5" stroke-dashoffset="0"/>
-      </svg>
-      <div class="display" id="display">00:00</div>
-    </div>
-    <div class="buttons">
-      <button class="btn-start" id="btnStart">Start</button>
-      <button class="btn-pause" id="btnPause" disabled>Pause</button>
-      <button class="btn-stop"  id="btnStop"  disabled>Stop</button>
-    </div>
-    <div class="status" id="status"></div>
+<!-- Timer -->
+<div class="timer-panel">
+  <div class="progress-ring">
+    <svg viewBox="0 0 320 320" width="320" height="320">
+      <circle class="ring-bg" cx="160" cy="160" r="150"/>
+      <circle class="ring-fg" id="ring" cx="160" cy="160" r="150"
+              stroke-dasharray="942.5" stroke-dashoffset="0"/>
+    </svg>
+    <div class="display" id="display">00:00</div>
+  </div>
+  <div class="buttons">
+    <button class="btn-start" id="btnStart">Start</button>
+    <button class="btn-pause" id="btnPause" disabled>Pause</button>
+    <button class="btn-stop"  id="btnStop"  disabled>Stop</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<!-- Gear button -->
+<button class="btn-gear" id="btnGear" title="Settings">⚙</button>
+
+<!-- Backdrop -->
+<div class="backdrop" id="backdrop"></div>
+
+<!-- Settings drawer -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2>Settings</h2>
+    <button class="btn-close" id="btnClose">×</button>
   </div>
 
-  <!-- Settings -->
-  <div class="settings-panel">
-    <h2>Duration</h2>
+  <div>
+    <div class="field" style="margin-bottom:6px">
+      <label>Duration</label>
+    </div>
     <div class="duration-inputs">
       <div class="field">
         <label>Min</label>
@@ -242,14 +309,15 @@
         <input type="number" id="inputSec" min="0" max="59" value="0">
       </div>
     </div>
-    <button class="btn-set" id="btnSet">Set</button>
-
-    <div class="notify-row">
-      <input type="checkbox" id="notifyCheck" checked>
-      <label for="notifyCheck">Notify when done</label>
-    </div>
-    <div class="notify-status" id="notifyStatus"></div>
   </div>
+
+  <button class="btn-set" id="btnSet">Set</button>
+
+  <div class="notify-row">
+    <input type="checkbox" id="notifyCheck" checked>
+    <label for="notifyCheck">Notify when done</label>
+  </div>
+  <div class="notify-status" id="notifyStatus"></div>
 </div>
 
 <script>
@@ -265,9 +333,13 @@
   const statusEl     = document.getElementById('status');
   const notifyCheck  = document.getElementById('notifyCheck');
   const notifyStatus = document.getElementById('notifyStatus');
+  const btnGear      = document.getElementById('btnGear');
+  const drawer       = document.getElementById('drawer');
+  const backdrop     = document.getElementById('backdrop');
+  const btnClose     = document.getElementById('btnClose');
 
   // ── State ──
-  const CIRCUMFERENCE = 2 * Math.PI * 122; // ≈ 766.5
+  const CIRCUMFERENCE = 2 * Math.PI * 150; // ≈ 942.5
   ring.style.strokeDasharray = CIRCUMFERENCE;
 
   let state       = 'idle';   // idle | running | paused | finished
@@ -275,6 +347,14 @@
   let remainingMs = 0;
   let endTime     = 0;
   let ticker      = null;
+
+  // ── Drawer ──
+  function openDrawer()  { drawer.classList.add('open'); backdrop.classList.add('open'); }
+  function closeDrawer() { drawer.classList.remove('open'); backdrop.classList.remove('open'); }
+
+  btnGear.addEventListener('click', openDrawer);
+  btnClose.addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
 
   // ── Helpers ──
   function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
@@ -287,7 +367,6 @@
   }
 
   function setRing(fraction) {
-    // fraction: 1 = full, 0 = empty
     const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
     ring.style.strokeDashoffset = offset;
   }
@@ -378,8 +457,6 @@
       if (totalMs <= 0) return;
       remainingMs = totalMs;
     }
-    // state === 'paused': remainingMs already set
-
     endTime = Date.now() + remainingMs;
     state = 'running';
     syncButtons();
@@ -404,7 +481,7 @@
     state = 'idle';
     totalMs = getDurationMs();
     remainingMs = totalMs;
-    document.title = 'Timer'; // reset on Stop
+    document.title = 'Timer';
     syncButtons();
     updateDisplay(remainingMs);
   });
@@ -419,18 +496,14 @@
     updateDisplay(remainingMs);
   });
 
-  // Clamp seconds input on blur
   inputSec.addEventListener('blur', () => {
-    let v = parseInt(inputSec.value) || 0;
-    inputSec.value = Math.max(0, Math.min(59, v));
+    inputSec.value = Math.max(0, Math.min(59, parseInt(inputSec.value) || 0));
   });
 
   inputMin.addEventListener('blur', () => {
-    let v = parseInt(inputMin.value) || 0;
-    inputMin.value = Math.max(0, v);
+    inputMin.value = Math.max(0, parseInt(inputMin.value) || 0);
   });
 
-  // Request notification permission when user enables the checkbox
   notifyCheck.addEventListener('change', async () => {
     if (notifyCheck.checked && !isFileProtocol && 'Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission();
