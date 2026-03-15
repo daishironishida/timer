@@ -7,6 +7,7 @@ https://daishironishida.github.io/timer/
 ## Features
 
 - Start, Pause, and Stop controls
+- Auto-restart mode — automatically repeats the timer when it finishes
 
 ## Usage
 
