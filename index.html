@@ -60,7 +60,7 @@
       stroke-linecap: round;
       transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
     }
-    .ring-fg.finished { stroke: var(--warn); }
+    .ring-fg.finished { stroke: #4caf82; }
 
     .display {
       font-size: 68px;
@@ -73,7 +73,7 @@
       position: relative;
     }
 
-    .display.finished { color: var(--accent); }
+    .display.finished { color: var(--muted); opacity: 0.5; }
 
     .buttons {
       display: flex;
@@ -100,9 +100,14 @@
     .status {
       font-size: 13px;
       color: var(--muted);
-      height: 18px;
+      height: 20px;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      transition: color 0.3s, font-size 0.3s;
+    }
+    .status.finished {
+      color: #4caf82;
+      font-size: 15px;
     }
 
     /* ── Gear button ── */
@@ -385,9 +390,9 @@
     const finished = state === 'finished';
 
     btnStart.textContent = paused ? 'Resume' : 'Start';
-    btnStart.disabled    = running || finished;
+    btnStart.disabled    = running;
     btnPause.disabled    = !running;
-    btnStop.disabled     = idle;
+    btnStop.disabled     = idle || finished;
 
     inputMin.disabled = running;
     inputSec.disabled = running;
@@ -395,11 +400,12 @@
 
     display.classList.toggle('finished', finished);
     ring.classList.toggle('finished', finished);
+    statusEl.classList.toggle('finished', finished);
 
     statusEl.textContent =
       running  ? 'Running' :
       paused   ? 'Paused'  :
-      finished ? 'Done'    : '';
+      finished ? 'Done ✓'  : '';
   }
 
   function getDurationMs() {
@@ -446,13 +452,14 @@
       state = 'finished';
       document.title = '* Done!';
       syncButtons();
+      updateDisplay(totalMs);   // show set duration, not 00:00
       fireNotification();
     }
   }
 
   // ── Button handlers ──
   btnStart.addEventListener('click', () => {
-    if (state === 'idle') {
+    if (state === 'idle' || state === 'finished') {
       totalMs = getDurationMs();
       if (totalMs <= 0) return;
       remainingMs = totalMs;
