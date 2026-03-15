@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a1a;
+      --surface: #242424;
+      --border: #333;
+      --text: #e8e8e8;
+      --muted: #888;
+      --accent: #4a9eff;
+      --danger: #ff5f57;
+      --warn: #ffbd2e;
+      --radius: 8px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ── Timer panel ── */
+    .timer-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .display {
+      font-size: clamp(72px, 18vw, 120px);
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -2px;
+      line-height: 1;
+      transition: color 0.3s;
+    }
+
+    .display.finished { color: var(--accent); }
+
+    .progress-ring {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-ring svg {
+      position: absolute;
+      top: 0; left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+    .ring-fg {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
+    }
+    .ring-fg.finished { stroke: var(--warn); }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:active:not(:disabled) { transform: scale(0.96); }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-start  { background: var(--accent);  color: #fff; }
+    .btn-pause  { background: var(--warn);    color: #1a1a1a; }
+    .btn-stop   { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      height: 18px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Settings panel ── */
+    .settings-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 200px;
+    }
+
+    .settings-panel h2 {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .duration-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .field label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 8px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+    .field input:disabled { opacity: 0.4; }
+
+    .colon {
+      font-size: 24px;
+      font-weight: 200;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+
+    .btn-set {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px;
+    }
+
+    .notify-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .notify-row input[type=checkbox] {
+      accent-color: var(--accent);
+      width: 15px; height: 15px;
+      cursor: pointer;
+    }
+
+    .notify-status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: -12px;
+    }
+    .notify-status.granted  { color: #4caf82; }
+    .notify-status.denied   { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Timer -->
+  <div class="timer-panel">
+    <div class="progress-ring">
+      <svg viewBox="0 0 260 260" width="260" height="260">
+        <circle class="ring-bg" cx="130" cy="130" r="122"/>
+        <circle class="ring-fg" id="ring" cx="130" cy="130" r="122"
+                stroke-dasharray="766.5" stroke-dashoffset="0"/>
+      </svg>
+      <div class="display" id="display">00:00</div>
+    </div>
+    <div class="buttons">
+      <button class="btn-start" id="btnStart">Start</button>
+      <button class="btn-pause" id="btnPause" disabled>Pause</button>
+      <button class="btn-stop"  id="btnStop"  disabled>Stop</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-panel">
+    <h2>Duration</h2>
+    <div class="duration-inputs">
+      <div class="field">
+        <label>Min</label>
+        <input type="number" id="inputMin" min="0" max="99" value="5">
+      </div>
+      <span class="colon">:</span>
+      <div class="field">
+        <label>Sec</label>
+        <input type="number" id="inputSec" min="0" max="59" value="0">
+      </div>
+    </div>
+    <button class="btn-set" id="btnSet">Set</button>
+
+    <div class="notify-row">
+      <input type="checkbox" id="notifyCheck" checked>
+      <label for="notifyCheck">Notify when done</label>
+    </div>
+    <div class="notify-status" id="notifyStatus"></div>
+  </div>
+</div>
+
+<script>
+  // ── DOM refs ──
+  const display      = document.getElementById('display');
+  const ring         = document.getElementById('ring');
+  const btnStart     = document.getElementById('btnStart');
+  const btnPause     = document.getElementById('btnPause');
+  const btnStop      = document.getElementById('btnStop');
+  const btnSet       = document.getElementById('btnSet');
+  const inputMin     = document.getElementById('inputMin');
+  const inputSec     = document.getElementById('inputSec');
+  const statusEl     = document.getElementById('status');
+  const notifyCheck  = document.getElementById('notifyCheck');
+  const notifyStatus = document.getElementById('notifyStatus');
+
+  // ── State ──
+  const CIRCUMFERENCE = 2 * Math.PI * 122; // ≈ 766.5
+  ring.style.strokeDasharray = CIRCUMFERENCE;
+
+  let state       = 'idle';   // idle | running | paused | finished
+  let totalMs     = 0;
+  let remainingMs = 0;
+  let endTime     = 0;
+  let ticker      = null;
+
+  // ── Helpers ──
+  function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
+
+  function msToDisplay(ms) {
+    const totalSec = Math.ceil(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${pad(m)}:${pad(s)}`;
+  }
+
+  function setRing(fraction) {
+    // fraction: 1 = full, 0 = empty
+    const offset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
+    ring.style.strokeDashoffset = offset;
+  }
+
+  function updateDisplay(ms) {
+    const text = msToDisplay(ms);
+    display.textContent = text;
+    document.title = state === 'finished' ? '* Done!' : 'Timer';
+    setRing(totalMs > 0 ? ms / totalMs : 0);
+  }
+
+  function syncButtons() {
+    const running  = state === 'running';
+    const paused   = state === 'paused';
+    const idle     = state === 'idle';
+    const finished = state === 'finished';
+
+    btnStart.textContent = paused ? 'Resume' : 'Start';
+    btnStart.disabled    = running || finished;
+    btnPause.disabled    = !running;
+    btnStop.disabled     = idle;
+
+    inputMin.disabled = running;
+    inputSec.disabled = running;
+    btnSet.disabled   = running;
+
+    display.classList.toggle('finished', finished);
+    ring.classList.toggle('finished', finished);
+
+    statusEl.textContent =
+      running  ? 'Running' :
+      paused   ? 'Paused'  :
+      finished ? 'Done'    : '';
+  }
+
+  function getDurationMs() {
+    const m = Math.max(0, parseInt(inputMin.value) || 0);
+    const s = Math.max(0, Math.min(59, parseInt(inputSec.value) || 0));
+    return (m * 60 + s) * 1000;
+  }
+
+  // ── Notification ──
+  const isFileProtocol = location.protocol === 'file:';
+
+  function updateNotifyStatus() {
+    if (isFileProtocol) {
+      notifyStatus.textContent = 'Notifications require a web server (works on GitHub Pages)';
+      notifyStatus.className = 'notify-status denied';
+      return;
+    }
+    const perm = Notification.permission;
+    notifyStatus.textContent =
+      perm === 'granted' ? 'Permission granted' :
+      perm === 'denied'  ? 'Permission denied — check browser settings' : '';
+    notifyStatus.className = 'notify-status ' + (perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : '');
+  }
+
+  function fireNotification() {
+    if (!notifyCheck.checked) return;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Timer finished!', {
+        body: 'Your countdown has ended.',
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⏱</text></svg>'
+      });
+    }
+  }
+
+  // ── Timer core ──
+  function tick() {
+    const now = Date.now();
+    remainingMs = Math.max(0, endTime - now);
+    updateDisplay(remainingMs);
+
+    if (remainingMs <= 0) {
+      clearInterval(ticker);
+      ticker = null;
+      state = 'finished';
+      document.title = '* Done!';
+      syncButtons();
+      fireNotification();
+    }
+  }
+
+  // ── Button handlers ──
+  btnStart.addEventListener('click', () => {
+    if (state === 'idle') {
+      totalMs = getDurationMs();
+      if (totalMs <= 0) return;
+      remainingMs = totalMs;
+    }
+    // state === 'paused': remainingMs already set
+
+    endTime = Date.now() + remainingMs;
+    state = 'running';
+    syncButtons();
+    updateDisplay(remainingMs);
+    ticker = setInterval(tick, 100);
+  });
+
+  btnPause.addEventListener('click', () => {
+    if (state !== 'running') return;
+    clearInterval(ticker);
+    ticker = null;
+    remainingMs = Math.max(0, endTime - Date.now());
+    state = 'paused';
+    syncButtons();
+    updateDisplay(remainingMs);
+  });
+
+  btnStop.addEventListener('click', () => {
+    if (state === 'idle') return;
+    clearInterval(ticker);
+    ticker = null;
+    state = 'idle';
+    totalMs = getDurationMs();
+    remainingMs = totalMs;
+    document.title = 'Timer'; // reset on Stop
+    syncButtons();
+    updateDisplay(remainingMs);
+  });
+
+  btnSet.addEventListener('click', () => {
+    totalMs = getDurationMs();
+    remainingMs = totalMs;
+    if (state === 'paused') {
+      state = 'idle';
+      syncButtons();
+    }
+    updateDisplay(remainingMs);
+  });
+
+  // Clamp seconds input on blur
+  inputSec.addEventListener('blur', () => {
+    let v = parseInt(inputSec.value) || 0;
+    inputSec.value = Math.max(0, Math.min(59, v));
+  });
+
+  inputMin.addEventListener('blur', () => {
+    let v = parseInt(inputMin.value) || 0;
+    inputMin.value = Math.max(0, v);
+  });
+
+  // Request notification permission when user enables the checkbox
+  notifyCheck.addEventListener('change', async () => {
+    if (notifyCheck.checked && !isFileProtocol && 'Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+      updateNotifyStatus();
+    }
+  });
+
+  // ── Init ──
+  updateNotifyStatus();
+  totalMs = getDurationMs();
+  remainingMs = totalMs;
+  updateDisplay(remainingMs);
+  syncButtons();
+</script>
+</body>
+</html>
