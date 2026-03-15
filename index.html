@@ -523,6 +523,9 @@
   let _saved = null;
   try { _saved = JSON.parse(localStorage.getItem('timer-duration')); } catch (_) {}
   if (_saved) { inputMin.value = _saved.min; inputSec.value = _saved.sec; }
+  if (notifyCheck.checked && !isFileProtocol && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(updateNotifyStatus);
+  }
   updateNotifyStatus();
   totalMs = getDurationMs();
   remainingMs = totalMs;

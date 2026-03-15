@@ -2,7 +2,7 @@
 
 A minimal countdown timer for the browser.
 
-https://github.com/daishironishida/timer
+https://daishironishida.github.io/timer/
 
 ## Features
 
