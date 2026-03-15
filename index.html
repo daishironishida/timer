@@ -408,6 +408,13 @@
       finished ? 'Done ✓'  : '';
   }
 
+  function saveDuration() {
+    localStorage.setItem('timer-duration', JSON.stringify({
+      min: parseInt(inputMin.value) || 0,
+      sec: parseInt(inputSec.value) || 0,
+    }));
+  }
+
   function getDurationMs() {
     const m = Math.max(0, parseInt(inputMin.value) || 0);
     const s = Math.max(0, Math.min(59, parseInt(inputSec.value) || 0));
@@ -460,6 +467,7 @@
   // ── Button handlers ──
   btnStart.addEventListener('click', () => {
     if (state === 'idle' || state === 'finished') {
+      saveDuration();
       totalMs = getDurationMs();
       if (totalMs <= 0) return;
       remainingMs = totalMs;
@@ -494,6 +502,7 @@
   });
 
   btnSet.addEventListener('click', () => {
+    saveDuration();
     totalMs = getDurationMs();
     remainingMs = totalMs;
     if (state === 'paused') {
@@ -519,6 +528,9 @@
   });
 
   // ── Init ──
+  let _saved = null;
+  try { _saved = JSON.parse(localStorage.getItem('timer-duration')); } catch (_) {}
+  if (_saved) { inputMin.value = _saved.min; inputSec.value = _saved.sec; }
   updateNotifyStatus();
   totalMs = getDurationMs();
   remainingMs = totalMs;
