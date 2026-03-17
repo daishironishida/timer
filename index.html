@@ -414,8 +414,8 @@
     const idle     = state === 'idle';
     const finished = state === 'finished';
 
-    btnStart.textContent = paused ? 'Resume' : 'Start';
-    btnStart.disabled    = running;
+    btnStart.textContent = running ? 'Restart' : paused ? 'Resume' : 'Start';
+    btnStart.disabled    = false;
     btnPause.disabled    = !running;
     btnStop.disabled     = idle || finished;
 
@@ -511,7 +511,11 @@
   btnStart.addEventListener('click', () => {
     cancelTitleRevert();
     document.title = 'Timer';
-    if (state === 'idle' || state === 'finished') {
+    if (state === 'running') {
+      clearInterval(ticker);
+      ticker = null;
+    }
+    if (state === 'idle' || state === 'finished' || state === 'running') {
       saveDuration();
       totalMs = getDurationMs();
       if (totalMs <= 0) return;
