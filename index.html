@@ -94,9 +94,10 @@
     button:active:not(:disabled) { transform: scale(0.96); }
     button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    .btn-start { background: var(--accent);  color: #fff; }
+    .btn-start          { background: var(--accent); color: #fff; }
+    .btn-start.restarting { background: #2d6bbf; }
     .btn-pause { background: #3a3a3a; color: var(--text); border: 1px solid #555; }
-    .btn-stop  { background: #3a3a3a; color: var(--text); border: 1px solid #555; }
+    .btn-stop  { background: #3a2020; color: #e08080; border: 1px solid #5a3030; }
 
     .status {
       font-size: 14px;
@@ -417,6 +418,7 @@
 
     btnStart.textContent = running ? 'Restart' : paused ? 'Resume' : 'Start';
     btnStart.disabled    = false;
+    btnStart.classList.toggle('restarting', running);
     btnPause.disabled    = !running;
     btnStop.disabled     = idle || finished;
 
