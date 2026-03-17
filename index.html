@@ -368,13 +368,13 @@
     cancelTitleRevert();
     function doRevert() { document.title = 'Timer'; titleRevertTimer = null; }
     if (document.visibilityState === 'visible') {
-      titleRevertTimer = setTimeout(doRevert, 10000);
+      titleRevertTimer = setTimeout(doRevert, 5000);
     } else {
       titleRevertVisHandler = () => {
         if (document.visibilityState === 'visible') {
           document.removeEventListener('visibilitychange', titleRevertVisHandler);
           titleRevertVisHandler = null;
-          titleRevertTimer = setTimeout(doRevert, 10000);
+          titleRevertTimer = setTimeout(doRevert, 5000);
         }
       };
       document.addEventListener('visibilitychange', titleRevertVisHandler);
